@@ -136,31 +136,30 @@ def depth_first_search(problem):
     "*** YOUR CODE HERE ***"
     stack = util.Stack()
     start_state = problem.get_start_state()
-    stack.push((start_state, []))  # (state, path of actions to reach that state)
+    stack.push((start_state, []))  #(state, path of actions to reach that state)
     
-    # A set to keep track of visited states
+    #Create a set (tuple) to keep track of the visited states
     visited = set()
 
-    # Main DFS loop
     while not stack.is_empty():
-        # Pop the top item from the stack
+        #Pop the top item from the stack
         current_state, actions = stack.pop()
 
-        # If this state is the goal, return the actions that got us here
+        #If it's the goal state, return the actions (path) that got us here
         if problem.is_goal_state(current_state):
             return actions
 
-        # If this state has not been visited, explore its successors
+        #If this state has not been visited, explore its successors
         if current_state not in visited:
-            visited.add(current_state)  # Mark this state as visited
+            visited.add(current_state)  #Add the state to the visited states list
 
-            # Expand the current state to get its successors
+            #Expand the current state to get its successors
             for successor, action, step_cost in problem.get_successors(current_state):
                 if successor not in visited:
-                    # Push the successor onto the stack with the updated path of actions
+                    #Push the successor onto the stack with the updated path of actions
                     stack.push((successor, actions + [action]))
 
-    # If no solution is found, return an empty list
+    #If no solution is found, return an empty list
     return []
     
     """
