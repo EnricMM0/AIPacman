@@ -187,7 +187,34 @@ def depth_first_search(problem):
 def breadth_first_search(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raise_not_defined()
+    queue = util.Queue()
+    start_state = problem.get_start_state()
+    queue.push((start_state, []))  #(state, path of actions to reach that state)
+
+    #Create a set (tuple) to keep track of the visited states
+    visited = set()
+
+    while not queue.is_empty():
+        #Dequeue the first item from the queue
+        current_state, actions = queue.pop()
+
+        #If it's the goal state, return the actions (path) that got us here
+        if problem.is_goal_state(current_state):
+            return actions
+        
+        #If this state has not been visited, explore its successors
+        if current_state not in visited:
+            visited.add(current_state)  #Add the state to the visited states list
+        
+        #Expand the current state to get its successors
+        for successor, action, step_cost in problem.get_successors(current_state):
+            if successor not in visited:
+                #Enqueue the successor onto the queue with the updated path of actions
+                queue.push((successor, actions + [action]))
+
+    #If no solution is found, return an empty list
+    return []
+    #util.raise_not_defined()
 
 def uniform_cost_search(problem):
     """Search the node of least total cost first."""
