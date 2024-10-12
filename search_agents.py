@@ -271,6 +271,7 @@ def euclidean_heuristic(position, problem, info={}):
 # This portion is incomplete.  Time to write code!  #
 #####################################################
 
+#Not for this submission
 class CornersProblem(search.SearchProblem):
     """
     This search problem finds paths through all four corners of a layout.
@@ -382,7 +383,7 @@ def nearest_corner(position, pending_corners):
     pending_corners.remove(nearest_corner)
     return min_dist, nearest_corner
 
-
+#Not for this submission
 def corners_heuristic(state, problem):
     """
     A heuristic for the CornersProblem that you defined.
@@ -568,8 +569,22 @@ def food_heuristic(state, problem):
     """
     position, food_grid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    #Get the food grid as a list
+    food_list = food_grid.as_list()
 
+    #Goal state, heuristic is 0
+    if not food_list:
+        return 0
+
+    #Find farthest food dot to current position (in maze distance)
+    max_distance = 0
+    for food in food_list:
+        distance = maze_distance(position, food, problem.starting_game_state)
+    if distance > max_distance:
+        max_distance = distance
+
+    #The heuristic returned is the maximum (maze) distance to a food dot
+    return max_distance
 
 def simplified_corners_heuristic(state, problem):
     """
