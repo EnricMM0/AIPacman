@@ -161,27 +161,6 @@ def depth_first_search(problem):
 
     #If no solution is found, return an empty list
     return []
-    
-    """
-    possiblemoves = util.Stack()
-    possiblemoves.push(problem.get_successors(problem.get_start_state())[0])
-    nodes_explored = []
-    nodes_explored.append([problem.get_start_state(),[]])
-    moves = []
-    next_state = problem.get_start_state()
-    while problem.is_goal_state(next_state) == False:
-            next_move =  possiblemoves.pop()
-            if (next_move[0] not in nodes_explored[:][0]):
-                next_state = next_move[0]
-                moves.append(next_move[1])
-                nodes_explored.append([next_state,moves])
-
-            possiblemoves.push(problem.get_successors(next_state))
-            if possiblemoves.is_empty():
-                moves.pop()
-    return  [moves]
-    #util.raise_not_defined()
-    """
 
 
 def breadth_first_search(problem):
@@ -198,13 +177,16 @@ def breadth_first_search(problem):
         #Dequeue the first item from the queue
         current_state, actions = queue.pop()
 
+        # If this state has already been visited, skip it
+        if current_state in visited:
+            continue
+
+        # Mark the current state as visited
+        visited.add(current_state)
+
         #If it's the goal state, return the actions (path) that got us here
         if problem.is_goal_state(current_state):
             return actions
-        
-        #If this state has not been visited, explore its successors
-        if current_state not in visited:
-            visited.add(current_state)  #Add the state to the visited states list
         
         #Expand the current state to get its successors
         for successor, action, step_cost in problem.get_successors(current_state):
@@ -214,7 +196,7 @@ def breadth_first_search(problem):
 
     #If no solution is found, return an empty list
     return []
-    #util.raise_not_defined()
+
 
 def uniform_cost_search(problem):
     """Search the node of least total cost first."""
