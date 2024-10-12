@@ -389,7 +389,7 @@ def corners_heuristic(state, problem):
 
       state:   The current search state
                (a data structure you chose in your search problem)
-               In our case ((x,y), remainingCornerns)
+               In our case ((x,y), remainingCorners)
 
       problem: The CornersProblem instance for this layout.
 
@@ -401,7 +401,22 @@ def corners_heuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    current_position, remaining_corners = state
+
+    #Return 0 when goal state has been reached
+    if not remaining_corners:
+        return 0
+    
+    #List of manhattan distances of each of the corners
+    distances = [util.manhattan_distance(current_position, corner) for corner in remaining_corners]
+
+    #Closest corner by manhattan distance implementation
+    min = float('inf')
+    for i in range (len(distances)):
+        if distances[i] < min:
+            min = distances[i]
+        
+    return min
 
 class AStarCornersAgent(SearchAgent):
     """A SearchAgent for FoodSearchProblem using A* and your food_heuristic"""
