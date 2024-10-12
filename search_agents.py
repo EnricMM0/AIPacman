@@ -294,6 +294,8 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        #Track remaining corners
+        self.remaining_corners = list(self.corners)
 
     def get_start_state(self):
         """
@@ -301,14 +303,18 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #Returns the starting position and the position of the corners
+        return self.startingPosition, tuple(self.remaining_corners)
 
     def is_goal_state(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #Retrieve the number of remaining corners
+        _, remaining_corners = state
+        #If there are 0 remaining corners return true (goal state)
+        return len(remaining_corners) == 0
 
     def get_successors(self, state):
         """
@@ -321,6 +327,7 @@ class CornersProblem(search.SearchProblem):
             is the incremental cost of expanding to that successor
         """
         successors = []
+        current_position, remaining_corners = state
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
@@ -331,7 +338,21 @@ class CornersProblem(search.SearchProblem):
             #   hits_wall = self.walls[next_x][next_y]
 
             "*** YOUR CODE HERE ***"
+            #code to determine if the move is legal (doesn't hit a wall)
+            current_position = state[0]
+            x,y = current_position
+            dx, dy = Actions.direction_to_vector(action)
+            next_x, next_y = int(x + dx), int(y + dy)
+            hits_wall = self.walls[next_x][next_y]
 
+            #If the move is legal
+            if not hits_wall:
+                #Determine if the next position is a corner
+                next_position = (next_x, next_y)
+                next_remaining_corners = tuple(corner for corner in remaining_corners if corner != next_position)
+
+                #Add successor to successors list (position, remaining corners, path, cost)
+                successors.append(((next_position, next_remaining_corners), action, 1))
         self._expanded += 1 # DO NOT CHANGE
         return successors
 
