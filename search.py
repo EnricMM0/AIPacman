@@ -177,11 +177,11 @@ def breadth_first_search(problem):
         #Dequeue the first item from the queue
         current_state, actions = queue.pop()
 
-        # If this state has already been visited, skip it
+        #If this state has already been visited, skip it (whole iteration skipped)
         if current_state in visited:
             continue
 
-        # Mark the current state as visited
+        #Mark the current state as visited
         visited.add(current_state)
 
         #If it's the goal state, return the actions (path) that got us here
