@@ -203,7 +203,7 @@ def uniform_cost_search(problem):
     "*** YOUR CODE HERE ***"
     pri_queue = util.PriorityQueue()
     start_state = problem.get_start_state()
-    pri_queue.push((start_state, [], 0), 0)  #(state, path of actions to reach that state, cost to reach that state)
+    pri_queue.push((start_state, [], 0), 0)  #((state, path of actions to reach that state, cost to reach that state), priority)
 
     #Create a set (tuple) to keep track of the visited states
     visited = set()
@@ -226,7 +226,7 @@ def uniform_cost_search(problem):
         #Expand the current state to get its successors
         for successor, action, step_cost in problem.get_successors(current_state):
             if successor not in visited:
-                #Enqueue the successor onto the priority queue with the updated path of actions and the new cost
+                #Enqueue the successor onto the priority queue with the updated path of actions, the new cost and the priority
                 pri_queue.push((successor, actions + [action], current_cost + step_cost), current_cost + step_cost)
 
     #If no solution is found, return an empty list
@@ -243,7 +243,44 @@ def null_heuristic(state, problem=None):
 def a_star_search(problem, heuristic=null_heuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raise_not_defined()
+    pri_queue = util.PriorityQueue()
+    start_state = problem.get_start_state()
+    pri_queue.push((start_state, [], 0), heuristic(start_state, problem))  #((state, path of actions to reach that state, cost to reach that state), priority)
+
+    #Create a set (tuple) to keep track of the visited states
+    visited = set()
+
+    while not pri_queue.is_empty():
+        #Dequeue the item with the lowest f(n) from the priority queue
+        current_state, actions, current_cost = pri_queue.pop()
+
+        #If this state has already been visited, skip it (whole iteration skipped)
+        if current_state in visited:
+            continue
+
+        #Mark the current state as visited
+        visited.add(current_state)
+
+        #If it's the goal state, return the actions (path) that got us here
+        if problem.is_goal_state(current_state):
+            return actions
+        
+        #Expand the current state to get its successors
+        for successor, action, step_cost in problem.get_successors(current_state):
+            if successor not in visited:
+                #compute new cost (g(n))
+                new_cost = current_cost + step_cost
+                #compute priority (f(n) = g(n) + h(n))
+                priority = new_cost + heuristic(successor, problem)
+                #Enqueue the successor onto the priority queue with the updated path of actions, the new cost and the priority
+                pri_queue.push((successor, actions + [action], new_cost), priority)
+
+    #If no solution is found, return an empty list
+    return []
+
+
+
+    #util.raise_not_defined()
 
 # Abbreviations
 bfs = breadth_first_search
