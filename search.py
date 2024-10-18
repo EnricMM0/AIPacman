@@ -279,9 +279,6 @@ def a_star_search(problem, heuristic=null_heuristic):
     return []
 
 
-
-    #util.raise_not_defined()
-
 # Abbreviations
 bfs = breadth_first_search
 dfs = depth_first_search
