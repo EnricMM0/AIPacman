@@ -580,8 +580,8 @@ def food_heuristic(state, problem):
     max_distance = 0
     for food in food_list:
         distance = maze_distance(position, food, problem.starting_game_state)
-    if distance > max_distance:
-        max_distance = distance
+        if distance > max_distance:
+            max_distance = distance
 
     #The heuristic returned is the maximum (maze) distance to a food dot
     return max_distance
