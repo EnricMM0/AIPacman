@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -14,6 +14,7 @@
 
 # import modules from python standard library
 import inspect
+import re
 import sys
 
 
@@ -38,7 +39,7 @@ class Question(object):
         return self.max_points
 
     # Note that 'thunk' must be a function which accepts a single argument,
-    # namely a 'grading' obj
+    # namely a 'grading' object
     def add_test_case(self, test_case, thunk):
         self.test_cases.append((test_case, thunk))
 
@@ -59,6 +60,7 @@ class PassAllTestsQuestion(Question):
             grades.fail("Tests failed.")
         else:
             grades.assign_full_credit()
+
 
 class ExtraCreditPassAllTestsQuestion(Question):
     def __init__(self, question_dict, display):
@@ -91,19 +93,20 @@ class HackedPartialCreditQuestion(Question):
         for test_case, f in self.test_cases:
             test_result = f(grades)
             if "points" in test_case.test_dict:
-                if test_result: points += float(test_case.test_dict["points"])
+                if test_result:
+                    points += float(test_case.test_dict["points"])
             else:
                 passed = passed and test_result
 
-        ## FIXME: Below terrible hack to match q3's logic
-        if int(points) == self.max_points and not passed:
+        # FIXME: Below terrible hack to match q3's logic
+        if (int(points) == self.max_points) and (not passed):
             grades.assign_zero_credit()
         else:
             grades.add_points(int(points))
 
 
 class Q6PartialCreditQuestion(Question):
-    """Fails any test which returns False, otherwise doesn't effect the grades obj.
+    """Fails any test which returns False, otherwise doesn't effect the grades object.
     Partial credit tests will add the required points."""
 
     def execute(self, grades):
@@ -115,8 +118,9 @@ class Q6PartialCreditQuestion(Question):
         if False in results:
             grades.assign_zero_credit()
 
+
 class PartialCreditQuestion(Question):
-    """Fails any test which returns False, otherwise doesn't effect the grades obj.
+    """Fails any test which returns False, otherwise doesn't effect the grades object.
     Partial credit tests will add the required points."""
 
     def execute(self, grades):
@@ -129,15 +133,11 @@ class PartialCreditQuestion(Question):
                 return False
 
 
-
 class NumberPassedQuestion(Question):
     """Grade is the number of test cases passed."""
 
     def execute(self, grades):
         grades.add_points([f(grades) for _, f in self.test_cases].count(True))
-
-
-
 
 
 # Template modeling a generic test case
@@ -185,13 +185,13 @@ class TestCase(object):
         return False
 
     # This should really be question level?
-    #
     def test_partial(self, grades, points, max_points):
         grades.add_points(points)
         extra_credit = max(0, points - max_points)
         regular_credit = points - extra_credit
 
-        grades.add_message('%s: %s (%s of %s points)' % ("PASS" if points >= max_points else "FAIL", self.path, regular_credit, max_points))
+        grades.add_message('%s: %s (%s of %s points)' % (
+            "PASS" if points >= max_points else "FAIL", self.path, regular_credit, max_points))
         if extra_credit > 0:
             grades.add_message('EXTRA CREDIT: %s points' % (extra_credit,))
 
@@ -202,4 +202,3 @@ class TestCase(object):
 
     def add_message(self, message):
         self.messages.extend(message.split('\n'))
-

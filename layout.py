@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -16,8 +16,10 @@ from util import manhattan_distance
 from game import Grid
 import os
 import random
+from functools import reduce
 
 VISIBILITY_MATRIX_CACHE = {}
+
 
 class Layout:
     """
@@ -26,7 +28,7 @@ class Layout:
 
     def __init__(self, layout_text):
         self.width = len(layout_text[0])
-        self.height= len(layout_text)
+        self.height = len(layout_text)
         self.walls = Grid(self.width, self.height, False)
         self.food = Grid(self.width, self.height, False)
         self.capsules = []
@@ -42,46 +44,48 @@ class Layout:
 
     def initialize_visibility_matrix(self):
         global VISIBILITY_MATRIX_CACHE
-        #if reduce(str_param.__add__, self.layout_text) not in VISIBILITY_MATRIX_CACHE:
-        if self.layout_text.__str__() not in VISIBILITY_MATRIX_CACHE:
+        if reduce(str.__add__, self.layout_text) not in VISIBILITY_MATRIX_CACHE:
             from game import Directions
-            vecs = [(-0.5,0), (0.5,0),(0,-0.5),(0,0.5)]
-            dirs = [Directions.NORTH, Directions.SOUTH, Directions.WEST, Directions.EAST]
-            vis = Grid(self.width, self.height, {Directions.NORTH:set(), Directions.SOUTH:set(), Directions.EAST:set(), Directions.WEST:set(), Directions.STOP:set()})
+            vecs = [(-0.5, 0), (0.5, 0), (0, -0.5), (0, 0.5)]
+            dirs = [Directions.NORTH, Directions.SOUTH,
+                    Directions.WEST, Directions.EAST]
+            vis = Grid(self.width, self.height, {Directions.NORTH: set(), Directions.SOUTH: set(
+            ), Directions.EAST: set(), Directions.WEST: set(), Directions.STOP: set()})
             for x in range(self.width):
                 for y in range(self.height):
                     if not self.walls[x][y]:
                         for vec, direction in zip(vecs, dirs):
                             dx, dy = vec
                             nextx, nexty = x + dx, y + dy
-                            while (nextx + nexty) != int(nextx) + int(nexty) or not self.walls[int(nextx)][int(nexty)] :
+                            while (nextx + nexty) != int(nextx) + int(nexty) or not self.walls[int(nextx)][int(nexty)]:
                                 vis[x][y][direction].add((nextx, nexty))
                                 nextx, nexty = x + dx, y + dy
             self.visibility = vis
-            #VISIBILITY_MATRIX_CACHE[reduce(str_param.__add__, self.layout_text)] = vis
-            VISIBILITY_MATRIX_CACHE[self.layout_text.__str__()] = vis
+            VISIBILITY_MATRIX_CACHE[reduce(str.__add__, self.layout_text)] = vis
         else:
-            #self.visibility = VISIBILITY_MATRIX_CACHE[reduce(str_param.__add__, self.layout_text)]
-            self.visibility = VISIBILITY_MATRIX_CACHE[self.layout_text.__str__()]
+            self.visibility = VISIBILITY_MATRIX_CACHE[reduce(
+                str.__add__, self.layout_text)]
 
     def is_wall(self, pos):
         x, col = pos
         return self.walls[x][col]
 
     def get_random_legal_position(self):
-        x = random.choice(range(self.width))
-        y = random.choice(range(self.height))
+        x = random.choice(list(range(self.width)))
+        y = random.choice(list(range(self.height)))
         while self.is_wall((x, y)):
-            x = random.choice(range(self.width))
-            y = random.choice(range(self.height))
-        return x,y
+            x = random.choice(list(range(self.width)))
+            y = random.choice(list(range(self.height)))
+        return x, y
 
     def get_random_corner(self):
-        poses = [(1,1), (1, self.height - 2), (self.width - 2, 1), (self.width - 2, self.height - 2)]
+        poses = [(1, 1), (1, self.height - 2), (self.width - 2, 1),
+                 (self.width - 2, self.height - 2)]
         return random.choice(poses)
 
     def get_furthest_corner(self, pac_pos):
-        poses = [(1,1), (1, self.height - 2), (self.width - 2, 1), (self.width - 2, self.height - 2)]
+        poses = [(1, 1), (1, self.height - 2), (self.width - 2, 1),
+                 (self.width - 2, self.height - 2)]
         dist, pos = max([(manhattan_distance(p, pac_pos), p) for p in poses])
         return pos
 
@@ -100,7 +104,7 @@ class Layout:
         Coordinates are flipped from the input format to the (x,y) convention here
 
         The shape of the maze.  Each character
-        represents a different type of obj.
+        represents a different type of object.
          % - Wall
          . - Food
          o - Capsule
@@ -128,25 +132,33 @@ class Layout:
         elif layout_char in ['G']:
             self.agent_positions.append((1, (x, y)))
             self.num_ghosts += 1
-        elif layout_char in  ['1', '2', '3', '4']:
+        elif layout_char in ['1', '2', '3', '4']:
             self.agent_positions.append((int(layout_char), (x, y)))
             self.num_ghosts += 1
-def get_layout(name, back = 2):
+
+
+def get_layout(name, back=2):
     if name.endswith('.lay'):
         layout = try_to_load('layouts/' + name)
-        if layout is None: layout = try_to_load(name)
+        if layout is None:
+            layout = try_to_load(name)
     else:
         layout = try_to_load('layouts/' + name + '.lay')
-        if layout is None: layout = try_to_load(name + '.lay')
-    if layout is None and back >= 0:
-        curdir = os.path.abspath('.')
+        if layout is None:
+            layout = try_to_load(name + '.lay')
+    if (layout is None) and (back >= 0):
+        cur_dir = os.path.abspath('.')
         os.chdir('..')
         layout = get_layout(name, back - 1)
-        os.chdir(curdir)
+        os.chdir(cur_dir)
     return layout
 
-def try_to_load(fullname):
-    if not os.path.exists(fullname): return None
-    f = open(fullname)
-    try: return Layout([line.strip() for line in f])
-    finally: f.close()
+
+def try_to_load(full_name):
+    if not os.path.exists(full_name):
+        return None
+    f = open(full_name)
+    try:
+        return Layout([line.strip() for line in f])
+    finally:
+        f.close()
