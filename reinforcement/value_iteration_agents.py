@@ -95,9 +95,18 @@ class ValueIterationAgent(ValueEstimationAgent):
           value function stored in self.values.
         """
         q_value = 0
-        for next_state, probability in self.mdp.get_transition_states_and_probs(state, action):
+
+        #Get all possible next states and their transition probabilities
+        transitions = self.mdp.get_transition_states_and_probs(state, action)
+
+        #Calculate the Q-value using the Bellman equation
+        for next_state, prob in transitions:
+            #Reward for moving from state to next_state with the given action
             reward = self.mdp.get_reward(state, action, next_state)
-            q_value += probability * (reward + self.discount * self.values[next_state])
+            
+            #Bellman equation component: reward + discounted value of the next state
+            q_value += prob * (reward + self.discount * self.values[next_state])
+
         return q_value
 
     def compute_action_from_values(self, state):
