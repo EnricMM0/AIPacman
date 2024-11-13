@@ -66,21 +66,21 @@ class ValueIterationAgent(ValueEstimationAgent):
           value iteration, V_k+1(...) depends on V_k(...)'s.
         """
         for i in range(self.iterations):
-            # Create a copy of the current values to use in updates
+            #Create a copy of the current values to use in updates
             new_values = self.values.copy()
             
             for state in self.mdp.get_states():
                 if self.mdp.is_terminal(state):
                     continue  # Terminal states have no future rewards
                 
-                # Compute the maximum Q-value for all actions in this state
+                #Compute the maximum Q-value for all actions in this state
                 max_q_value = max(
                     self.compute_q_value_from_values(state, action)
                     for action in self.mdp.get_possible_actions(state)
                 )
                 new_values[state] = max_q_value
             
-            # Update values with the newly computed values for this iteration
+            #Update values with the newly computed values for this iteration
             self.values = new_values
             
     def get_value(self, state):
