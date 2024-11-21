@@ -52,10 +52,9 @@ class QLearningAgent(ReinforcementAgent):
           or the Q node value otherwise
         """
         "*** YOUR CODE HERE ***"
-        if self.q_values:
-            return self.q_values[(state, action)]
-        else:
-            return 0.0
+        #return  the qvalues
+        return self.q_values[(state, action)]
+
 
 
     def compute_value_from_q_values(self, state):
@@ -66,6 +65,7 @@ class QLearningAgent(ReinforcementAgent):
           terminal state, you should return a value of 0.0.
         """
         "*** YOUR CODE HERE ***"
+        #Return the max qvalue from the possible actions
         legal_actions = self.get_legal_actions(state)
         if not legal_actions:
             return 0.0
@@ -78,6 +78,7 @@ class QLearningAgent(ReinforcementAgent):
           you should return None.
         """
         "*** YOUR CODE HERE ***"
+        #Compute and return the best action from the possible actions by using the get_q_value function (In case of draw return a random action from the best actions)
         legal_actions = self.get_legal_actions(state)
         if not legal_actions:
             return None
@@ -97,7 +98,7 @@ class QLearningAgent(ReinforcementAgent):
           HINT: You might want to use util.flip_coin(prob)
           HINT: To pick randomly from a list, use random.choice(list)
         """
-        # Pick Action
+        #Pick Action
         legal_actions = self.get_legal_actions(state)
         action = None
         "*** YOUR CODE HERE ***"
@@ -118,7 +119,10 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
+        #Compute the sample value (reward + discounted future max qvalue)
         sample = reward + self.discount * self.compute_value_from_q_values(next_state)
+
+        #Update the qvalue for the (state, action) pair using the weighted average formula
         self.q_values[(state, action)] = (1 - self.alpha) * self.get_q_value(state, action) + self.alpha * sample
 
     def get_policy(self, state):

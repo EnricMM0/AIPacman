@@ -57,7 +57,7 @@ class ValueIterationAgent(ValueEstimationAgent):
         self.mdp = mdp
         self.discount = discount
         self.iterations = iterations
-        self.values = util.Counter() # A Counter is a dict with default 0
+        self.values = util.Counter()
         self.run_value_iteration()
     
     def run_value_iteration(self):
@@ -71,9 +71,9 @@ class ValueIterationAgent(ValueEstimationAgent):
             
             for state in self.mdp.get_states():
                 if self.mdp.is_terminal(state):
-                    continue  # Terminal states have no future rewards
+                    continue  #Terminal states have no future rewards
                 
-                #Compute the maximum Q-value for all actions in this state
+                #Compute the maximum qvalue for all actions in this state
                 max_q_value = max(
                     self.compute_q_value_from_values(state, action)
                     for action in self.mdp.get_possible_actions(state)
@@ -127,7 +127,7 @@ class ValueIterationAgent(ValueEstimationAgent):
         if not possible_actions:
             return None
 
-        # Choose the action with the highest Q-value
+        #Choose the action with the highest qvalue
         best_action = max(
             possible_actions,
             key=lambda action: self.compute_q_value_from_values(state, action)
