@@ -201,7 +201,7 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
         boundary_positions = self.get_boundary_positions(game_state)
         self.previous_position = game_state.get_agent_position(self.index)
         
-        if self.previous_position in boundary_positions and my_state.num_carrying > 1 and action == Directions.WEST:
+        if my_pos in boundary_positions and my_state.num_carrying > 1 and action == Directions.WEST:
             features['crossing_bonus'] = 1
         '''boundary_positions = self.get_boundary_positions(game_state)
         dist_home = min(self.get_maze_distance(my_pos, position) for position in boundary_positions)
