@@ -286,12 +286,36 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
         if len(invaders) > 0:
             dists = [self.get_maze_distance(my_pos, a.get_position()) for a in invaders]
             features['invader_distance'] = min(dists)
+        
+        if self.get_maze_distance(my_pos, (14,7)) == 0:
+            features ['dist_to middle'] = 1.5
+        else: 
+            features ['dist_to middle'] = 1/self.get_maze_distance(my_pos, (14,7))
 
+
+        if  self.red != True:
+            if my_pos == (21,4) or my_pos == (23,6) or my_pos == (24,7)  or my_pos == (28,12) or my_pos == (23,12):
+                features['value_pos'] = -5
+            if my_pos == (22,4) or my_pos == (24,6) or my_pos == (24,12) or my_pos == (21,6):
+                features['value_pos'] = -2
+            if my_pos == (21,1) or my_pos == (23,1) or my_pos == (26,1) or my_pos == (26,3) or my_pos == (22,10):
+                features['value_pos'] = -3
+
+        else:
+            if my_pos == (10,11) or my_pos == (8,9) or my_pos == (7,8)  or my_pos == (3,3) or my_pos == (8,3):
+                features['value_pos'] = -5
+            if my_pos == (9,11) or my_pos == (7,9) or my_pos == (7,3) or my_pos == (10,9):
+                features['value_pos'] = -2
+
+            if my_pos == (10,14) or my_pos == (8,14) or my_pos == (5,14) or my_pos == (5,12) or my_pos == (9,5):
+                features['value_pos'] = -3
+                 
         if action == Directions.STOP: features['stop'] = 1
         rev = Directions.REVERSE[game_state.get_agent_state(self.index).configuration.direction]
         if action == rev: features['reverse'] = 1
 
+
         return features
 
     def get_weights(self, game_state, action):
-        return {'num_invaders': -1000, 'on_defense': 100, 'invader_distance': -10, 'stop': -100, 'reverse': -2}
+        return {'num_invaders': -1000, 'on_defense': 100, 'invader_distance': -100, 'stop': -100, 'reverse': -2,'dist_to_middle' : 20,'value_pos':5}
