@@ -153,29 +153,31 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
         """
         layout = game_state.get_walls()
         mid_x = layout.width // 2
-        boundary_x = mid_x - 1 if self.red else mid_x  # Adjust for team color
+        boundary_x = mid_x - 1 if self.red else mid_x  #Adjust for team color
         boundary_positions = [(boundary_x, y) for y in range(layout.height) if not layout[boundary_x][y]]
 
         return boundary_positions
     
     def get_features(self, game_state, action):
         features = util.Counter()
+        current_state = game_state.get_agent_state(self.index)
+        current_pos = current_state.get_position()
         successor = self.get_successor(game_state, action)
-        my_state = successor.get_agent_state(self.index)  #Agent's state after taking the action
+        successor_state = successor.get_agent_state(self.index)  #Agent's state after taking the action
+        successor_pos = successor.get_agent_state(self.index).get_position()
         food_list = self.get_food(successor).as_list()
         features['successor_score'] = -len(food_list)  #self.get_score(successor)
 
         #Compute distance to the nearest food to punish being far from food
         if len(food_list) > 0:  # This should always be True,  but better safe than sorry
-            my_pos = successor.get_agent_state(self.index).get_position()
-            min_distance = min([self.get_maze_distance(my_pos, food) for food in food_list])
+            min_distance = min([self.get_maze_distance(successor_pos, food) for food in food_list])
             features['distance_to_food'] = min_distance
 
         #Check for nearby enemies whenever in the opponent's field
         enemies = [successor.get_agent_state(i) for i in self.get_opponents(successor)]
-        visible_enemies = [e for e in enemies if e.get_position() is not None and not e.is_pacman and my_state.is_pacman and e.scared_timer == 0]
+        visible_enemies = [e for e in enemies if e.get_position() is not None and not e.is_pacman and successor_state.is_pacman and e.scared_timer == 0]
         if visible_enemies:
-            enemy_distances = [self.get_maze_distance(my_pos, e.get_position()) for e in visible_enemies]
+            enemy_distances = [self.get_maze_distance(successor_pos, e.get_position()) for e in visible_enemies]
             nearest_enemy_distance = min(enemy_distances)
         else:
             nearest_enemy_distance = float('inf')  #No visible enemies
@@ -183,50 +185,79 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
         if nearest_enemy_distance <= 3:
             features['distance_to_enemy'] = 1 / (nearest_enemy_distance + 1)
 
-        if nearest_enemy_distance <= 2 and my_pos[0]>15:
+        if nearest_enemy_distance <= 2 and successor_pos[0]>15:
             #prioritize moving to safety
             if self.pellet_consumed == False:
                 power_pellet_position = (25, 10)
             else:
                 power_pellet_position = (1, 1)
-            distance_to_power_pellet = self.get_maze_distance(my_pos, power_pellet_position)
+            distance_to_power_pellet = self.get_maze_distance(successor_pos, power_pellet_position)
             boundary_positions = self.get_boundary_positions(game_state)
-            distance_to_boundary = min([self.get_maze_distance(my_pos, pos) for pos in boundary_positions])
+            distance_to_boundary = min([self.get_maze_distance(successor_pos, pos) for pos in boundary_positions])
 
-            # Encourage movement towards the closer of either power pellet or boundary
+            #Encourage movement towards the closer of either power pellet or boundary
             features['distance_to_safety'] = min(distance_to_power_pellet, distance_to_boundary)
-        
 
+        #Calculate distance to boundary
+        boundary_positions = self.get_boundary_positions(game_state)
+        distance_to_boundary = min([self.get_maze_distance(successor_pos, pos) for pos in boundary_positions])
+
+        #Only apply return_bonus if agent is carrying food and progressing towards the boundary
+        if (successor_state.num_carrying > 2 and successor_pos[0] > 15 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 18):
+            previous_distance = getattr(self, "prev_distance_to_boundary", float('inf'))
+            if distance_to_boundary < previous_distance and successor_pos != getattr(self, "prev_position", None):
+                features['return_bonus'] = 200 - distance_to_boundary * 4
+            else:
+                features['return_bonus'] = 0  #Remove bonus if not progressing
+            self.prev_distance_to_boundary = distance_to_boundary  #Track distance for comparison
+            self.prev_position = successor_pos  #Track position for movement detection
+
+
+        if current_state.num_carrying > 0 and successor_pos[0] <= 15:
+            features['crossing_bonus'] = 5000  #Encourage crossing home
+            self.prev_distance_to_boundary = float('inf')  #Reset tracking
+        
         
         boundary_positions = self.get_boundary_positions(game_state)
         self.previous_position = game_state.get_agent_position(self.index)
         
-        if my_pos in boundary_positions and my_state.num_carrying > 1 and action == Directions.WEST:
-            features['crossing_bonus'] = 1
-        '''boundary_positions = self.get_boundary_positions(game_state)
-        dist_home = min(self.get_maze_distance(my_pos, position) for position in boundary_positions)
-        if my_state.num_carrying > 2:
-            features['proximity_to_home'] = 1/(1+dist_home)
-            if dist_home == 0:
-                features['crossing_bonus'] = 1 '''
 
         if action == Directions.STOP: features['stop'] = 1
-        rev = Directions.REVERSE[game_state.get_agent_state(self.index).configuration.direction]
-        if action == rev: features['reverse'] = 1
+
+        #Discourage entering certain positions where it's easy to get trapped when close to an enemy
+        if self.red:
+            if nearest_enemy_distance < 8 and self.pellet_consumed == False:
+                if successor_pos == (21,4) or successor_pos == (23,6) or successor_pos == (24,7)  or successor_pos == (28,12) or successor_pos == (23,12) or successor_pos == (28,5):
+                    features['value_pos'] = -5
+                if successor_pos == (22,4) or successor_pos == (24,6) or successor_pos == (24,12) or successor_pos == (21,6):
+                    features['value_pos'] = -2
+
+            if nearest_enemy_distance < 6 and self.pellet_consumed == False:
+                if successor_pos == (21,1) or successor_pos == (23,1) or successor_pos == (26,1) or successor_pos == (26,3) or successor_pos == (22,10) or successor_pos == (28,7):
+                    features['value_pos'] = -3
 
 
-        if my_pos == (21,4) or my_pos == (23,6) or my_pos == (24,7)  or my_pos == (28,12):
-            features['value_pos'] = -3
-        if my_pos == (22,4) or my_pos == (24,6):
-            features['value_pos'] = -1
-        if my_pos == (25,10) and  not self.pellet_consumed:
-            self.pellet_consumed = True
-        print(action, features)
+            if successor_pos == (25,10) and  not self.pellet_consumed:
+                self.pellet_consumed = True
+        else:
+            if nearest_enemy_distance < 8 and self.pellet_consumed == False:
+                if successor_pos == (10,11) or successor_pos == (8,9) or successor_pos == (7,8)  or successor_pos == (3,3) or successor_pos == (8,3) or successor_pos == (3,10):
+                    features['value_pos'] = -5
+                if successor_pos == (9,11) or successor_pos == (7,9) or successor_pos == (7,3) or successor_pos == (10,9):
+                    features['value_pos'] = -2
+
+            if nearest_enemy_distance < 6 and self.pellet_consumed == False:
+                if successor_pos == (10,14) or successor_pos == (8,14) or successor_pos == (5,14) or successor_pos == (5,12) or successor_pos == (9,5) or successor_pos == (3,8):
+                    features['value_pos'] = -3
+
+
+            if successor_pos == (6,5) and  not self.pellet_consumed:
+                self.pellet_consumed = True
         return features  
         
     def get_weights(self, game_state, action):
 
-        return {'successor_score': 500, 'distance_to_food': -1, 'distance_to_enemy': -100, 'distance_to_safety': -200, 'proximity_to_home': 500, 'crossing_bonus': 5000,'stop': -100, 'reverse': -5, 'value_pos':50}
+        return {'successor_score': 500, 'distance_to_food': -1, 'distance_to_enemy': -100, 'distance_to_safety': -200, 'crossing_bonus': 5000,'stop': -100,'value_pos':50, 'return_bonus': 1}
         
 
 class DefensiveReflexAgent(ReflexCaptureAgent):
