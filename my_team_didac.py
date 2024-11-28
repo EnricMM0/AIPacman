@@ -204,7 +204,7 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
         distance_to_boundary = min([self.get_maze_distance(successor_pos, pos) for pos in boundary_positions])
 
         #Only apply return_bonus if agent is carrying food and progressing towards the boundary
-        if (successor_state.num_carrying > 1 and successor_pos[0] > 15 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 6) or (successor_state.num_carrying > 0 and remaining_time < 120):
+        if (successor_state.num_carrying > 1 and successor_pos[0] > 15 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 6) or (successor_state.num_carrying > 0 and remaining_time < 120) or (game_state.get_score()+successor_state.num_carrying >= 18):
             previous_distance = getattr(self, "prev_distance_to_boundary", float('inf'))
             if distance_to_boundary < previous_distance and successor_pos != getattr(self, "prev_position", None):
                 features['return_bonus'] = 200 - distance_to_boundary * 4
