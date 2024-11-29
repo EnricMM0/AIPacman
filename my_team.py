@@ -231,7 +231,7 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
                 if successor_pos == (21,4) or successor_pos == (23,6) or successor_pos == (24,7)  or successor_pos == (28,12) or successor_pos == (23,12) or successor_pos == (28,5):
                     features['value_pos'] = -5
                 if successor_pos == (22,4) or successor_pos == (24,6) or successor_pos == (24,12) or successor_pos == (21,6):
-                    features['value_pos'] = -2
+                    features['value_pos'] = -4
 
             if nearest_enemy_distance < 6 and any(e.scared_timer == 0 for e in enemies):
                 if successor_pos == (21,1) or successor_pos == (23,1) or successor_pos == (26,1) or successor_pos == (26,3) or successor_pos == (22,10) or successor_pos == (28,7) or successor_pos == (21,8):
@@ -315,6 +315,8 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
 
             if my_pos == (10,14) or my_pos == (8,14) or my_pos == (5,14) or my_pos == (5,12) or my_pos == (9,5):
                 features['value_pos'] = -3
+            if my_pos[0]<=2:
+                features['value_pos'] = -1
                  
         if action == Directions.STOP: features['stop'] = 1
         rev = Directions.REVERSE[game_state.get_agent_state(self.index).configuration.direction]
