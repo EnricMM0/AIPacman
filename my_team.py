@@ -27,6 +27,8 @@ from capture_agents import CaptureAgent
 from game import Directions
 from util import nearest_point
 import pickle
+from capture import compute_noisy_distance
+
 
 
 #################
@@ -186,7 +188,7 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
         if nearest_enemy_distance < 4:
             features['distance_to_enemy'] = 1 / (nearest_enemy_distance + 1)
 
-        if nearest_enemy_distance <= 2 and successor_pos[0]>15:
+        if nearest_enemy_distance <= 2 and successor_pos[0]>15 and self.red:
             #prioritize moving to safety
             if self.pellet_consumed == False:
                 power_pellet_position = (25, 10)
@@ -199,12 +201,25 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
             #Encourage movement towards the closer of either power pellet or boundary
             features['distance_to_safety'] = min(distance_to_power_pellet, distance_to_boundary)
 
+        if nearest_enemy_distance <= 2 and successor_pos[0]<16 and not self.red:
+            #prioritize moving to safety
+            if self.pellet_consumed == False:
+                power_pellet_position = (6, 5)
+            else:
+                power_pellet_position = (30,14)
+            distance_to_power_pellet = self.get_maze_distance(successor_pos, power_pellet_position)
+            boundary_positions = self.get_boundary_positions(game_state)
+            distance_to_boundary = min([self.get_maze_distance(successor_pos, pos) for pos in boundary_positions])
+
+            #Encourage movement towards the closer of either power pellet or boundary
+            features['distance_to_safety'] = min(distance_to_power_pellet, distance_to_boundary)
+
         #Calculate distance to boundary
         boundary_positions = self.get_boundary_positions(game_state)
         distance_to_boundary = min([self.get_maze_distance(successor_pos, pos) for pos in boundary_positions])
 
         #Only apply return_bonus if agent is carrying food and progressing towards the boundary
-        if (successor_state.num_carrying > 1 and successor_pos[0] > 15 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 6) or (successor_state.num_carrying > 0 and remaining_time < 120) or (game_state.get_score()+successor_state.num_carrying >= 18):
+        if self.red and (successor_state.num_carrying > 1 and successor_pos[0] > 15 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 6) or (successor_state.num_carrying > 0 and remaining_time < 120) or (game_state.get_score()+successor_state.num_carrying >= 18):
             previous_distance = getattr(self, "prev_distance_to_boundary", float('inf'))
             if distance_to_boundary < previous_distance and successor_pos != getattr(self, "prev_position", None):
                 features['return_bonus'] = 200 - distance_to_boundary * 4
@@ -213,11 +228,22 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
             self.prev_distance_to_boundary = distance_to_boundary  #Track distance for comparison
             self.prev_position = successor_pos  #Track position for movement detection
 
+        if not self.red and (successor_state.num_carrying > 1 and successor_pos[0] < 16 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 6) or (successor_state.num_carrying > 0 and remaining_time < 120) or (game_state.get_score()+successor_state.num_carrying >= 18):
+            previous_distance = getattr(self, "prev_distance_to_boundary", float('inf'))
+            if distance_to_boundary < previous_distance and successor_pos != getattr(self, "prev_position", None):
+                features['return_bonus'] = 200 - distance_to_boundary * 4
+            else:
+                features['return_bonus'] = 0  #Remove bonus if not progressing
+            self.prev_distance_to_boundary = distance_to_boundary  #Track distance for comparison
+            self.prev_position = successor_pos  #Track position for movement detection
 
-        if current_state.num_carrying > 0 and successor_pos[0] <= 15:
+        if current_state.num_carrying > 0 and successor_pos[0] <= 15 and self.red:
             features['crossing_bonus'] = 5000  #Encourage crossing home
             self.prev_distance_to_boundary = float('inf')  #Reset tracking
         
+        if current_state.num_carrying > 0 and successor_pos[0] >= 16 and not self.red:
+            features['crossing_bonus'] = 5000  #Encourage crossing home
+            self.prev_distance_to_boundary = float('inf')  #Reset tracking
         
         boundary_positions = self.get_boundary_positions(game_state)
         self.previous_position = game_state.get_agent_position(self.index)
@@ -292,11 +318,55 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
         if len(invaders) > 0 and my_state.scared_timer > 0:
             dists = [self.get_maze_distance(my_pos, a.get_position()) for a in invaders]
             features['invader_distance'] = -min(dists)
-        
-        if self.get_maze_distance(my_pos, (14,7)) == 0:
-            features ['dist_to middle'] = 1.5
-        else: 
-            features ['dist_to middle'] = 1/self.get_maze_distance(my_pos, (14,7))
+
+
+        enemy_positions = [a.get_position() for a in enemies]
+        invader_positions = [a.get_position() for a in enemies if a.is_pacman]
+        frontier_x = 15 if self.red else 16  # Adjust based on team
+        distance_to_frontier = abs(my_pos[0] - frontier_x)
+        if distance_to_frontier <= 4:
+            features['proximity_to_frontier'] = 1
+        features['vertical_alignment'] = 0  # Default alignment feature
+
+        # Handle visible enemies
+        visible_enemy_positions = [pos for pos in enemy_positions if pos is not None]
+        if visible_enemy_positions:
+            dists = [self.get_maze_distance(my_pos, pos) for pos in visible_enemy_positions]
+            closest_enemy_pos = visible_enemy_positions[dists.index(min(dists))]
+
+            if abs(my_pos[0] - frontier_x) <= 3:  # Near the frontier
+                # Align vertically with the closest visible enemy
+                if my_pos[1] > closest_enemy_pos[1]:
+                    if action == Directions.NORTH:
+                        features['vertical_alignment_invader'] = -1  # Penalize moving up
+                    if action == Directions.SOUTH:
+                        features['vertical_alignment_invader'] = 1 #Reward moving down
+                elif my_pos[1] < closest_enemy_pos[1]:
+                    if action == Directions.NORTH:
+                        features['vertical_alignment_invader'] = 1  # Reward moving up
+                    if action == Directions.SOUTH:
+                        features['vertical_alignment_invader'] = -1 #Penalize moving down
+
+        # Handle noisy distances for unobservable enemies
+        elif abs(my_pos[0] - frontier_x) <= 3:
+            noisy_distances = game_state.get_agent_distances()
+            if noisy_distances:
+                enemy_indices = self.get_opponents(successor)
+                for enemy_idx in enemy_indices:
+                    if successor.get_agent_state(enemy_idx).is_pacman:
+                        noisy_distance = noisy_distances[enemy_idx]
+                        enemy_pos = game_state.get_agent_position(enemy_idx)
+
+                        if enemy_pos is None:  # Enemy is out of sight
+                            # Compute noisy distances to approximate vertical alignment
+                            estimated_distance = compute_noisy_distance(my_pos, (frontier_x, my_pos[1]))
+                            if abs(noisy_distance - estimated_distance) <= 1:  # Adjust as needed
+                                # Align vertically to approximate position
+                                if my_pos[1] > frontier_x:
+                                    features['vertical_alignment_invader'] = -1
+                                elif my_pos[1] < frontier_x:
+                                    features['vertical_alignment_invader'] = 1
+
 
 
         if  self.red != True:
@@ -306,24 +376,24 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
                 features['value_pos'] = -2
             if my_pos == (21,1) or my_pos == (23,1) or my_pos == (26,1) or my_pos == (26,3) or my_pos == (22,10):
                 features['value_pos'] = -3
+            if my_pos[0]>=29 or my_pos == (28,1) or my_pos == (28,2) or my_pos == (28,3)or my_pos == (28,4) or my_pos == (28,5):
+                features['value_pos'] = -1
 
         else:
             if my_pos == (10,11) or my_pos == (8,9) or my_pos == (7,8)  or my_pos == (3,3) or my_pos == (8,3):
                 features['value_pos'] = -5
             if my_pos == (9,11) or my_pos == (7,9) or my_pos == (7,3) or my_pos == (10,9):
                 features['value_pos'] = -2
-
             if my_pos == (10,14) or my_pos == (8,14) or my_pos == (5,14) or my_pos == (5,12) or my_pos == (9,5):
                 features['value_pos'] = -3
-            if my_pos[0]<=2:
+            if my_pos[0]<=2 or my_pos == (3,10) or my_pos == (3,11) or my_pos == (3,12)or my_pos == (3,13) or my_pos == (3,14):
                 features['value_pos'] = -1
                  
         if action == Directions.STOP: features['stop'] = 1
         rev = Directions.REVERSE[game_state.get_agent_state(self.index).configuration.direction]
         if action == rev: features['reverse'] = 1
 
-
         return features
 
     def get_weights(self, game_state, action):
-        return {'num_invaders': -1000, 'on_defense': 100, 'invader_distance': -100, 'stop': -100, 'reverse': -2,'dist_to_middle' : 20,'value_pos':5}
+        return {'num_invaders': -2000, 'on_defense': 100, 'invader_distance': -100, 'stop': -100, 'reverse': -2,'proximity_to_frontier' : 100,'value_pos':5, 'vertical_alignment': 100}
