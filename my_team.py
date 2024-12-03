@@ -219,7 +219,7 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
         distance_to_boundary = min([self.get_maze_distance(successor_pos, pos) for pos in boundary_positions])
 
         #Only apply return_bonus if agent is carrying food and progressing towards the boundary
-        if self.red and (successor_state.num_carrying > 1 and successor_pos[0] > 15 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 6) or (successor_state.num_carrying > 0 and remaining_time < 120) or (game_state.get_score()+successor_state.num_carrying >= 18):
+        if self.red and ((successor_state.num_carrying > 0 and successor_pos[0] > 15 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 6) or (successor_state.num_carrying > 0 and remaining_time < 120) or (game_state.get_score()+successor_state.num_carrying >= 18)):
             previous_distance = getattr(self, "prev_distance_to_boundary", float('inf'))
             if distance_to_boundary < previous_distance and successor_pos != getattr(self, "prev_position", None):
                 features['return_bonus'] = 200 - distance_to_boundary * 4
@@ -228,7 +228,7 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
             self.prev_distance_to_boundary = distance_to_boundary  #Track distance for comparison
             self.prev_position = successor_pos  #Track position for movement detection
 
-        if not self.red and (successor_state.num_carrying > 1 and successor_pos[0] < 16 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 6) or (successor_state.num_carrying > 0 and remaining_time < 120) or (game_state.get_score()+successor_state.num_carrying >= 18):
+        if not self.red and ((successor_state.num_carrying > 0 and successor_pos[0] < 16 and nearest_enemy_distance < 9) or (successor_state.num_carrying >= 6) or (successor_state.num_carrying > 0 and remaining_time < 120) or (game_state.get_score()+successor_state.num_carrying >= 18)):
             previous_distance = getattr(self, "prev_distance_to_boundary", float('inf'))
             if distance_to_boundary < previous_distance and successor_pos != getattr(self, "prev_position", None):
                 features['return_bonus'] = 200 - distance_to_boundary * 4
@@ -334,7 +334,7 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
             dists = [self.get_maze_distance(my_pos, pos) for pos in visible_enemy_positions]
             closest_enemy_pos = visible_enemy_positions[dists.index(min(dists))]
 
-            if abs(my_pos[0] - frontier_x) <= 3:  # Near the frontier
+            if distance_to_frontier <= 3:  # Near the frontier
                 # Align vertically with the closest visible enemy
                 if my_pos[1] > closest_enemy_pos[1]:
                     if action == Directions.NORTH:
@@ -348,7 +348,7 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
                         features['vertical_alignment_invader'] = -1 #Penalize moving down
 
         # Handle noisy distances for unobservable enemies
-        elif abs(my_pos[0] - frontier_x) <= 3:
+        elif distance_to_frontier <= 3:
             noisy_distances = game_state.get_agent_distances()
             if noisy_distances:
                 enemy_indices = self.get_opponents(successor)
